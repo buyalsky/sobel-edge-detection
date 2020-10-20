@@ -29,8 +29,6 @@ void writeImageToFile(Image image, char *filename){
     }
     fprintf(file, "P2\n%d %d\n255\n", image.width, image.height);
 
-    //normalizeMatrice(filteredMatrice, width - 2, height - 2);
-
     for (int i = 0; i < image.height; ++i) {
         for (int j = 0; j < image.width; ++j) {
             if (image.content[i][j] < 0)
@@ -49,7 +47,7 @@ void writeImageToFile(Image image, char *filename){
     fclose(file);
 }
 
-void normalizeMatrice(int **matrice, int width, int height){
+void normalizeMatrix(int **matrice, int width, int height){
     int min = matrice[0][0], max = matrice[0][0];
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
@@ -139,9 +137,8 @@ int main() {
     }
 
     fgets(arr, 100, fptr);
-    printf("%s\n", arr);
     fgets(arr, 100, fptr);
-    Image sourceImage;
+    Image sourceImage, outImageX, outImageY;
     char * suffix;
     char * token = strtok(arr, " ");
     sourceImage.width = (int) strtol(token, &suffix, 10);
@@ -149,7 +146,6 @@ int main() {
     token = strtok(NULL, " ");
     sourceImage.height = (int) strtol(token, &suffix, 10);
 
-    printf("%d %d\n", sourceImage.width, sourceImage.height);
     fgets(arr, 10000, fptr);
 
     sourceImage.content = (int **) malloc(sourceImage.height * sizeof(int *));
@@ -179,28 +175,10 @@ int main() {
 
     fclose(fptr);
 
-    for (int i = 0; i < sourceImage.height; ++i) {
-        for (int j = 0; j < sourceImage.width; ++j) {
-            printf("%d ", sourceImage.content[i][j]);
-        }
-        printf("\n");
-    }
-
     int ***frameArray = extractMatrixIntoFramesX(sourceImage);
 
-    for (int i = 0; i < (sourceImage.width - 2) * (sourceImage.height -2); ++i) {
-        for (int j = 0; j < 3; ++j) {
-            printf("%d %d %d\n", frameArray[i][j][0], frameArray[i][j][1], frameArray[i][j][2]);
-        }
-        printf("\n\n");
-    }
-
-    printf("===============\n");
-
-    Image outImageX;
     outImageX.width = sourceImage.width - 2;
     outImageX.height = sourceImage.height - 2;
-
     outImageX.content = (int **) malloc(outImageX.height * sizeof(int *));
 
     for (int i = 0; i < outImageX.height; ++i) {
@@ -209,12 +187,8 @@ int main() {
             outImageX.content[i][j] = filterByX(frameArray[i * outImageX.width + j]);
         }
     }
-
-    //normalizeMatrice(filteredMatrice, width - 2, height - 2);
-
     writeImageToFile(outImageX, "imageOutX.pgm");
 
-    Image outImageY;
     outImageY.width = sourceImage.width - 2;
     outImageY.height = sourceImage.height - 2;
 
@@ -226,7 +200,6 @@ int main() {
             outImageY.content[i][j] = filterByY(frameArray[i * outImageY.width + j]);
         }
     }
-
     writeImageToFile(outImageY, "imageOutY.pgm");
 
     return 0;
