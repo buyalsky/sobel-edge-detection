@@ -3,6 +3,12 @@
 #include <string.h>
 #include <stdbool.h>
 
+typedef struct Image{
+    int width;
+    int height;
+    int **content;
+} Image;
+
 const int xAxis[3][3] = {
         {-1, 0, 1},
         {-2, 0, 2},
@@ -15,7 +21,7 @@ const int yAxis[3][3] = {
         {-1, -2, -1}
 };
 
-void **normalizeMatrice(int **matrice, int width, int height){
+void normalizeMatrice(int **matrice, int width, int height){
     int min = matrice[0][0], max = matrice[0][0];
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
@@ -64,7 +70,7 @@ int filterByY(int **frame){
            yAxis[2][2] * frame[2][2];
 }
 
-int ***extractMatriceIntoFramesX(int **matrice, int width, int height){
+int ***extractMatrixIntoFramesX(int **matrice, int width, int height){
     int ***frameArray = (int ***) malloc((height - 2) * (width - 2) * sizeof(int **));
 
     for (int i = 0; i < height - 2; ++i) {
@@ -135,29 +141,29 @@ int main() {
     fgets(arr, 100, fptr);
     printf("%s\n", arr);
     fgets(arr, 100, fptr);
-    int width, height;
+    Image sourceImage;
     char * suffix;
     char * token = strtok(arr, " ");
-    width = (int) strtol(token, &suffix, 10);
+    sourceImage.width = (int) strtol(token, &suffix, 10);
 
     token = strtok(NULL, " ");
-    height = (int) strtol(token, &suffix, 10);
+    sourceImage.height = (int) strtol(token, &suffix, 10);
 
-    printf("%d %d\n", width, height);
+    printf("%d %d\n", sourceImage.width, sourceImage.height);
     fgets(arr, 10000, fptr);
 
-    int **imageContent = (int **) malloc(height * sizeof(int *));
+    int **imageContent = (int **) malloc(sourceImage.height * sizeof(int *));
 
-    for (int i = 0; i < height; ++i) {
-        imageContent[i] = (int *) malloc(width * sizeof(int));
+    for (int i = 0; i < sourceImage.height; ++i) {
+        imageContent[i] = (int *) malloc(sourceImage.width * sizeof(int));
     }
 
-    for (int i = 0; i < height; ++i) {
+    for (int i = 0; i < sourceImage.height; ++i) {
         int j = 0;
         char value[4] = "\0";
         int c = getc(fptr);
         bool enteredInt = false;
-        while (j < width){
+        while (j < sourceImage.width){
             if (c>=48 && c<=57){
                 strncat(value, (const char *) &c, 1);
                 enteredInt = true;
@@ -171,16 +177,18 @@ int main() {
         }
     }
 
-    for (int i = 0; i <height; ++i) {
-        for (int j = 0; j < width; ++j) {
+    fclose(fptr);
+
+    for (int i = 0; i < sourceImage.height; ++i) {
+        for (int j = 0; j < sourceImage.width; ++j) {
             printf("%d ", imageContent[i][j]);
         }
         printf("\n");
     }
 
-    int ***frameArray = extractMatriceIntoFramesX(imageContent, width, height);
+    int ***frameArray = extractMatrixIntoFramesX(imageContent, sourceImage.width, sourceImage.height);
 
-    for (int i = 0; i < (width - 2) * (height -2); ++i) {
+    for (int i = 0; i < (sourceImage.width - 2) * (sourceImage.height -2); ++i) {
         for (int j = 0; j < 3; ++j) {
             printf("%d %d %d\n", frameArray[i][j][0], frameArray[i][j][1], frameArray[i][j][2]);
         }
@@ -189,36 +197,39 @@ int main() {
 
     printf("===============\n");
 
-    printf("%d\n", filterByX(frameArray[0]));
+    //printf("%d\n", filterByX(frameArray[0]));
 
     FILE *fout;
     if ((fout = fopen("imageOutX.pgm", "w")) == NULL){
         perror("Error happened while opening file!");
         exit(1);
     }
-    fprintf(fout, "P2\n%d %d\n255\n", width - 2, height - 2);
+    Image outImageX;
+    outImageX.width = sourceImage.width - 2;
+    outImageX.height = sourceImage.height - 2;
+    fprintf(fout, "P2\n%d %d\n255\n", outImageX.width, outImageX.height);
 
-    int **filteredMatrice = (int **) malloc((height - 2) * sizeof(int *));
+    outImageX.content = (int **) malloc(outImageX.height * sizeof(int *));
 
-    for (int i = 0; i < height - 2; ++i) {
-        filteredMatrice[i] = (int *) malloc((width - 2) * sizeof(int));
-        for (int j = 0; j < width - 2; ++j) {
-            filteredMatrice[i][j] = filterByX(frameArray[i * (width - 2) + j]);
+    for (int i = 0; i < outImageX.height; ++i) {
+        outImageX.content[i] = (int *) malloc(outImageX.width * sizeof(int));
+        for (int j = 0; j < outImageX.width; ++j) {
+            outImageX.content[i][j] = filterByX(frameArray[i * outImageX.width + j]);
         }
     }
 
     //normalizeMatrice(filteredMatrice, width - 2, height - 2);
 
-    for (int i = 0; i < (height -2); ++i) {
-        for (int j = 0; j < (width - 2); ++j) {
-            if (filteredMatrice[i][j] < 0)
+    for (int i = 0; i < outImageX.height; ++i) {
+        for (int j = 0; j < outImageX.width ; ++j) {
+            if (outImageX.content[i][j] < 0)
                 fprintf(fout, "   0");
-            else if (filteredMatrice[i][j]<10 && filteredMatrice[i][j]>=0)
-                fprintf(fout, "   %d", filteredMatrice[i][j]);
-            else if (filteredMatrice[i][j]<100 && filteredMatrice[i][j]>=10)
-                fprintf(fout, "  %d", filteredMatrice[i][j]);
-            else if (filteredMatrice[i][j]>=100 && filteredMatrice[i][j] <= 255)
-                fprintf(fout, " %d", filteredMatrice[i][j]);
+            else if (outImageX.content[i][j]<10 && outImageX.content[i][j]>=0)
+                fprintf(fout, "   %d", outImageX.content[i][j]);
+            else if (outImageX.content[i][j]<100 && outImageX.content[i][j]>=10)
+                fprintf(fout, "  %d", outImageX.content[i][j]);
+            else if (outImageX.content[i][j]>=100 && outImageX.content[i][j] <= 255)
+                fprintf(fout, " %d", outImageX.content[i][j]);
             else
                 fprintf(fout, " 255");
         }
@@ -227,33 +238,37 @@ int main() {
 
     fclose(fout);
 
+    Image outImageY;
+    outImageY.width = sourceImage.width - 2;
+    outImageY.height = sourceImage.height - 2;
+
     if ((fout = fopen("imageOutY.pgm", "w")) == NULL){
         perror("Error happened while opening file!");
         exit(1);
     }
-    fprintf(fout, "P2\n%d %d\n255\n", width - 2, height - 2);
+    fprintf(fout, "P2\n%d %d\n255\n", outImageX.width, outImageX.height);
 
-    filteredMatrice = (int **) malloc((height - 2) * sizeof(int *));
+    outImageY.content = (int **) malloc(outImageX.height * sizeof(int *));
 
-    for (int i = 0; i < height - 2; ++i) {
-        filteredMatrice[i] = (int *) malloc((width - 2) * sizeof(int));
-        for (int j = 0; j < width - 2; ++j) {
-            filteredMatrice[i][j] = filterByY(frameArray[i * (width - 2) + j]);
+    for (int i = 0; i < outImageX.height; ++i) {
+        outImageY.content[i] = (int *) malloc(outImageY.width * sizeof(int));
+        for (int j = 0; j < outImageY.width; ++j) {
+            outImageY.content[i][j] = filterByY(frameArray[i * outImageY.width + j]);
         }
     }
 
     //normalizeMatrice(filteredMatrice, width - 2, height - 2);
 
-    for (int i = 0; i < (height -2); ++i) {
-        for (int j = 0; j < (width - 2); ++j) {
-            if (filteredMatrice[i][j] < 0)
+    for (int i = 0; i < outImageY.height; ++i) {
+        for (int j = 0; j < outImageY.width; ++j) {
+            if (outImageY.content[i][j] < 0)
                 fprintf(fout, "   0");
-            else if (filteredMatrice[i][j]<10 && filteredMatrice[i][j]>=0)
-                fprintf(fout, "   %d", filteredMatrice[i][j]);
-            else if (filteredMatrice[i][j]<100 && filteredMatrice[i][j]>=10)
-                fprintf(fout, "  %d", filteredMatrice[i][j]);
-            else if (filteredMatrice[i][j]>=100 && filteredMatrice[i][j] <= 255)
-                fprintf(fout, " %d", filteredMatrice[i][j]);
+            else if (outImageY.content[i][j]<10 && outImageY.content[i][j]>=0)
+                fprintf(fout, "   %d", outImageY.content[i][j]);
+            else if (outImageY.content[i][j]<100 && outImageY.content[i][j]>=10)
+                fprintf(fout, "  %d", outImageY.content[i][j]);
+            else if (outImageY.content[i][j]>=100 && outImageY.content[i][j] <= 255)
+                fprintf(fout, " %d", outImageY.content[i][j]);
             else
                 fprintf(fout, " 255");
         }
