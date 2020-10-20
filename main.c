@@ -138,6 +138,8 @@ int main() {
 
     fgets(arr, 100, fptr);
     fgets(arr, 100, fptr);
+    if (arr[0] == '#')
+        fgets(arr, 100, fptr);
     Image sourceImage, outImageX, outImageY;
     char * suffix;
     char * token = strtok(arr, " ");
