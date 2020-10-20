@@ -100,36 +100,6 @@ int ***extractMatrixIntoFramesX(int **matrice, int width, int height){
     return frameArray;
 }
 
-int ***extractMatriceIntoFramesY(int **matrice, int width, int height){
-    int ***frameArray = (int ***) malloc((height - 2) * (width - 2) * sizeof(int **));
-
-    for (int i = 0; i < height - 2; ++i) {
-        for (int j = 0; j < width - 2; ++j) {
-            frameArray[i+ j * (width - 2) ] = (int **) malloc(3 * sizeof(int *));
-            for (int k = 0; k < 3; ++k) {
-                frameArray[i+ j * (width - 2) ][k] = (int *) malloc(3 * sizeof(int));
-                for (int l = 0; l < 3; ++l) {
-                    frameArray[i * (width - 2) + j][k][l] = 0;
-                }
-            }
-        }
-    }
-    for (int j = 0; j < width - 2; ++j) {
-        for (int i = 0; i < height - 2; ++i) {
-            frameArray[i + j * (height - 2)][0][0] = matrice[i][j];
-            frameArray[i + j * (height - 2)][0][1] = matrice[i][j+1];
-            frameArray[i + j * (height - 2)][0][2] = matrice[i][j+2];
-            frameArray[i + j * (height - 2)][1][0] = matrice[i+1][j];
-            frameArray[i + j * (height - 2)][1][1] = matrice[i+1][j+1];
-            frameArray[i + j * (height - 2)][1][2] = matrice[i+1][j+2];
-            frameArray[i + j * (height - 2)][2][0] = matrice[i+2][j];
-            frameArray[i + j * (height - 2)][2][1] = matrice[i+2][j+1];
-            frameArray[i + j * (height - 2)][2][2] = matrice[i+2][j+2];
-        }
-    }
-    return frameArray;
-}
-
 int main() {
     char arr[100];
     FILE *fptr;
