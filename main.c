@@ -18,9 +18,9 @@ const int sobelFilterX[3][3] = {
 };
 
 const int sobelFilterY[3][3] = {
-        {1, 2, 1},
+        {-1, -2, -1},
         {0, 0, 0},
-        {-1, -2, -1}
+        {1, 2, 1}
 };
 
 void readPgmFile(Image *image, char *filename, char *readMode);
@@ -40,7 +40,7 @@ int main() {
     Image sourceImage, outImageX, outImageY;
     sourceImage.content = NULL;
     // TODO Merge X and Y image
-    readPgmFile(&sourceImage, "lena2.pgm", "rb");
+    readPgmFile(&sourceImage, "buffalo.pgm", "rb");
 
     normalizeMatrix(&sourceImage);
     writeImage(sourceImage, "imageOutB.pgm");
@@ -53,38 +53,40 @@ int main() {
     outImageX.width = sourceImage.width - 2;
     outImageX.height = sourceImage.height - 2;
     outImageX.content = (int **) malloc(outImageX.height * sizeof(int *));
-
-    for (int i = 0; i < outImageX.height; ++i) {
+	int i, j;
+    for (i = 0; i < outImageX.height; ++i) {
         outImageX.content[i] = (int *) malloc(outImageX.width * sizeof(int));
-        for (int j = 0; j < outImageX.width; ++j) {
+        for (j = 0; j < outImageX.width; ++j) {
             outImageX.content[i][j] = filterByX(frameArray[i * outImageX.width + j]);
         }
     }
-    normalizeMatrix(&outImageX);
-    writeImage(outImageX, "imageOutX.pgm");
+    
 
     outImageY.width = sourceImage.width - 2;
     outImageY.height = sourceImage.height - 2;
     outImageY.content = (int **) malloc(outImageX.height * sizeof(int *));
 
-    for (int i = 0; i < outImageX.height; ++i) {
+    for (i = 0; i < outImageX.height; ++i) {
         outImageY.content[i] = (int *) malloc(outImageY.width * sizeof(int));
-        for (int j = 0; j < outImageY.width; ++j) {
+        for (j = 0; j < outImageY.width; ++j) {
             outImageY.content[i][j] = filterByY(frameArray[i * outImageY.width + j]);
         }
     }
-
+    
+    Image outImage = mergeImages(&outImageX, &outImageY);
+	normalizeMatrix(&outImageX);
+    writeImage(outImageX, "imageOutX.pgm");
     normalizeMatrix(&outImageY);
     writeImage(outImageY, "imageOutY.pgm");
     free(frameArray);
-    //Image outImage = mergeImages(&outImageX, &outImageY);
-    //normalizeMatrix(&outImage);
-    //writeImage(outImage, "imageOuts.pgm");
+    normalizeMatrix(&outImage);
+    writeImage(outImage, "imageOut.pgm");
 
     return 0;
 }
 
 void readBinaryPgm(Image *image, FILE *fptr){
+	int i, j;
     char buffer[100], *suffix;
     fgets(buffer, 100, fptr);
     if (buffer[0] == '#')
@@ -103,15 +105,16 @@ void readBinaryPgm(Image *image, FILE *fptr){
 
     image->content = (int **) malloc(image->height * sizeof(int *));
 
-    for (int i = 0; i < image->height; ++i) {
+    for (i = 0; i < image->height; ++i) {
         image->content[i] = (int *) malloc(image->width * sizeof(int));
-        for (int j = 0; j < image->width; ++j) {
+        for (j = 0; j < image->width; ++j) {
             image->content[i][j] = plainImage[i * image->width + j];
         }
     }
 }
 
 void readAsciiPgm(Image *image, FILE *fptr){
+	int i;
     char buffer[100];
     fgets(buffer, 100, fptr);
     if (buffer[0] == '#')
@@ -125,7 +128,7 @@ void readAsciiPgm(Image *image, FILE *fptr){
 
     image->content = (int **) malloc(image->height * sizeof(int *));
 
-    for (int i = 0; i < image->height; ++i) {
+    for (i = 0; i < image->height; ++i) {
         image->content[i] = (int *) malloc(image->width * sizeof(int));
         int j = 0;
         char value[4] = "\0";
@@ -164,6 +167,7 @@ void readPgmFile(Image *image, char *filename, char *readMode){
 }
 
 void writeImageToAsciiFile(Image image, char *filename){
+	int i, j;
     FILE *file;
     if ((file = fopen(filename, "w")) == NULL){
         perror("Error happened while opening file!");
@@ -171,8 +175,8 @@ void writeImageToAsciiFile(Image image, char *filename){
     }
     fprintf(file, "P2\n%d %d\n255\n", image.width, image.height);
 
-    for (int i = 0; i < image.height; ++i) {
-        for (int j = 0; j < image.width; ++j) {
+    for (i = 0; i < image.height; ++i) {
+        for (j = 0; j < image.width; ++j) {
             if (image.content[i][j] < 0)
                 fprintf(file, "   0");
             else if (image.content[i][j]<10 && image.content[i][j]>=0)
@@ -190,6 +194,7 @@ void writeImageToAsciiFile(Image image, char *filename){
 }
 
 void writeImageToBinaryFile(Image image, char *filename){
+	int i, j;
     FILE *file;
     if ((file = fopen(filename, "wb")) == NULL){
         perror("Error happened while opening file!");
@@ -197,8 +202,8 @@ void writeImageToBinaryFile(Image image, char *filename){
     }
 
     fprintf(file, "P5\n%d %d\n255\n", image.width, image.height);
-    for (int i = 0; i < image.height; ++i) {
-        for (int j = 0; j < image.width; ++j) {
+    for (i = 0; i < image.height; ++i) {
+        for (j = 0; j < image.width; ++j) {
             if (image.content[i][j] < 0)
                 fprintf(file, "%c", 0);
             else if (image.content[i][j] > 255)
@@ -217,17 +222,18 @@ void writeImage(Image image, char *filename){
 }
 
 void normalizeMatrix(Image *image){
+	int i, j;
     int min = image->content[0][0], max = image->content[0][0];
-    for (int i = 0; i < image->height; ++i) {
-        for (int j = 0; j < image->width; ++j) {
+    for (i = 0; i < image->height; ++i) {
+        for (j = 0; j < image->width; ++j) {
             if (min > image->content[i][j]) min = image->content[i][j];
             if (max < image->content[i][j]) max = image->content[i][j];
         }
     }
     int difference = max - min;
 
-    for (int i = 0; i < image->height; ++i) {
-        for (int j = 0; j < image->width; ++j) {
+    for (i = 0; i < image->height; ++i) {
+        for (j = 0; j < image->width; ++j) {
             if (difference == 0)
                 image->content[i][j] = 255;
             else{
@@ -239,9 +245,10 @@ void normalizeMatrix(Image *image){
 }
 
 int filterByX(int **frame){
+	int i, j;
     int sum = 0;
-    for (int i = 0; i <3; ++i) {
-        for (int j = 0; j < 3; ++j) {
+    for (i = 0; i <3; ++i) {
+        for (j = 0; j < 3; ++j) {
             sum += sobelFilterX[i][j] * frame[i][j];
         }
     }
@@ -249,9 +256,10 @@ int filterByX(int **frame){
 }
 
 int filterByY(int **frame){
+	int i, j;
     int sum = 0;
-    for (int i = 0; i <3; ++i) {
-        for (int j = 0; j < 3; ++j) {
+    for (i = 0; i <3; ++i) {
+        for (j = 0; j < 3; ++j) {
             sum += sobelFilterY[i][j] * frame[i][j];
         }
     }
@@ -259,25 +267,26 @@ int filterByY(int **frame){
 }
 
 int ***extractMatrixIntoFrames(Image image){
+	int i, j, k, l;
     int frameArrayHeight = image.height - 2;
     int frameArrayWidth = image.width - 2;
     int ***frameArray = (int ***) malloc(frameArrayHeight * frameArrayWidth * sizeof(int **));
 
-    for (int i = 0; i < frameArrayHeight; ++i) {
-        for (int j = 0; j < frameArrayWidth; ++j) {
+    for (i = 0; i < frameArrayHeight; ++i) {
+        for (j = 0; j < frameArrayWidth; ++j) {
             frameArray[i * frameArrayWidth + j] = (int **) malloc(3 * sizeof(int *));
-            for (int k = 0; k < 3; ++k) {
+            for (k = 0; k < 3; ++k) {
                 frameArray[i * frameArrayWidth + j][k] = (int *) malloc(3 * sizeof(int));
-                for (int l = 0; l < 3; ++l) {
+                for (l = 0; l < 3; ++l) {
                     frameArray[i * frameArrayWidth + j][k][l] = 0;
                 }
             }
         }
     }
-    for (int i = 0; i < frameArrayHeight; ++i) {
-        for (int j = 0; j < frameArrayWidth; ++j) {
-            for (int k = 0; k < 3; ++k) {
-                for (int l = 0; l < 3; ++l) {
+    for (i = 0; i < frameArrayHeight; ++i) {
+        for (j = 0; j < frameArrayWidth; ++j) {
+            for (k = 0; k < 3; ++k) {
+                for (l = 0; l < 3; ++l) {
                     frameArray[i * frameArrayWidth + j][k][l] = image.content[i+k][j+l];
                 }
             }
@@ -287,27 +296,28 @@ int ***extractMatrixIntoFrames(Image image){
 }
 
 Image addPaddingToImage(Image image){
+	int i, j;
     Image paddedImage;
     paddedImage.width = image.width + 2;
     paddedImage.height = image.height + 2;
     paddedImage.content = (int **) malloc(paddedImage.height * sizeof(int *));
 
-    for (int i = 0; i < paddedImage.height; ++i) {
+    for (i = 0; i < paddedImage.height; ++i) {
         paddedImage.content[i] = (int *) malloc(paddedImage.width * sizeof(int));
     }
 
-    for (int i = 0; i < image.height; ++i) {
-        for (int j = 0; j < image.width; ++j) {
+    for (i = 0; i < image.height; ++i) {
+        for (j = 0; j < image.width; ++j) {
             paddedImage.content[i+1][j+1] = image.content[i][j];
         }
     }
 
-    for (int i = 0; i < image.width; ++i) {
+    for (i = 0; i < image.width; ++i) {
         paddedImage.content[0][i] = image.content[0][i];
         paddedImage.content[paddedImage.height-1][i] = image.content[image.height-1][i];
     }
 
-    for (int i = 0; i < image.height; ++i) {
+    for (i = 0; i < image.height; ++i) {
         paddedImage.content[i][0] = image.content[i][0];
         paddedImage.content[i][paddedImage.width-1] = image.content[i][image.width-1];
     }
@@ -321,15 +331,16 @@ Image addPaddingToImage(Image image){
 }
 
 Image mergeImages(Image *imageX, Image *imageY){
+	int i, j;
     Image mergedImage;
     mergedImage.width = imageX->width;
     mergedImage.height = imageX->height;
 
     mergedImage.content = (int **) malloc(mergedImage.height * sizeof(int *));
 
-    for (int i = 0; i < mergedImage.height; ++i) {
+    for (i = 0; i < mergedImage.height; ++i) {
         mergedImage.content[i] = (int *) malloc(mergedImage.width * sizeof(int));
-        for (int j = 0; j < mergedImage.width; ++j) {
+        for (j = 0; j < mergedImage.width; ++j) {
          mergedImage.content[i][j] = (int) sqrt((double) (imageX->content[i][j] * imageX->content[i][j] +
                  imageY->content[i][j] * imageY->content[i][j]));
         }
