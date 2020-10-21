@@ -21,62 +21,62 @@ const int yAxis[3][3] = {
         {-1, -2, -1}
 };
 
-void readBinaryPgm(Image *sourceImage, FILE *fptr){
+void readBinaryPgm(Image *image, FILE *fptr){
     char buffer[100];
     fgets(buffer, 100, fptr);
     if (buffer[0] == '#')
         fgets(buffer, 100, fptr);
     char *suffix;
     char *token = strtok(buffer, " ");
-    sourceImage->width = (int) strtol(token, &suffix, 10);
+    image->width = (int) strtol(token, &suffix, 10);
 
     token = strtok(NULL, " ");
-    sourceImage->height = (int) strtol(token, &suffix, 10);
+    image->height = (int) strtol(token, &suffix, 10);
     fgets(buffer, 100, fptr);
 
-    unsigned char *plainImage = (unsigned char *) malloc(sourceImage->width *
-            sourceImage->height * sizeof(unsigned char));
+    unsigned char *plainImage = (unsigned char *) malloc(image->width *
+                                                         image->height * sizeof(unsigned char));
 
-    fread(plainImage, sizeof(unsigned char), sourceImage->width * sourceImage->height, fptr);
+    fread(plainImage, sizeof(unsigned char), image->width * image->height, fptr);
 
     fgets(buffer, 10000, fptr);
 
-    sourceImage->content = (int **) malloc(sourceImage->height * sizeof(int *));
+    image->content = (int **) malloc(image->height * sizeof(int *));
 
-    for (int i = 0; i < sourceImage->height; ++i) {
-        sourceImage->content[i] = (int *) malloc(sourceImage->width * sizeof(int));
-        for (int j = 0; j < sourceImage->width; ++j) {
-            sourceImage->content[i][j] = plainImage[i * sourceImage->width + j];
+    for (int i = 0; i < image->height; ++i) {
+        image->content[i] = (int *) malloc(image->width * sizeof(int));
+        for (int j = 0; j < image->width; ++j) {
+            image->content[i][j] = plainImage[i * image->width + j];
         }
     }
 }
 
-void readAsciiPgm(Image *sourceImage, FILE *fptr){
+void readAsciiPgm(Image *image, FILE *fptr){
     char buffer[100];
     fgets(buffer, 100, fptr);
     if (buffer[0] == '#')
         fgets(buffer, 100, fptr);
     char *suffix;
     char *token = strtok(buffer, " ");
-    sourceImage->width = (int) strtol(token, &suffix, 10);
+    image->width = (int) strtol(token, &suffix, 10);
 
     token = strtok(NULL, " ");
-    sourceImage->height = (int) strtol(token, &suffix, 10);
+    image->height = (int) strtol(token, &suffix, 10);
 
-    sourceImage->content = (int **) malloc(sourceImage->height * sizeof(int *));
+    image->content = (int **) malloc(image->height * sizeof(int *));
 
-    for (int i = 0; i < sourceImage->height; ++i) {
-        sourceImage->content[i] = (int *) malloc(sourceImage->width * sizeof(int));
+    for (int i = 0; i < image->height; ++i) {
+        image->content[i] = (int *) malloc(image->width * sizeof(int));
         int j = 0;
         char value[4] = "\0";
         int c = getc(fptr);
         bool enteredInt = false;
-        while (j < sourceImage->width){
+        while (j < image->width){
             if (c>=48 && c<=57){
                 strncat(value, (const char *) &c, 1);
                 enteredInt = true;
             } else if (enteredInt){
-                sourceImage->content[i][j] = (int) strtol(value, &suffix, 10);
+                image->content[i][j] = (int) strtol(value, &suffix, 10);
                 strcpy(value, "");
                 enteredInt = false;
                 j++;
