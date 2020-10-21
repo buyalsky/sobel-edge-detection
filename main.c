@@ -122,14 +122,12 @@ void writeImageToFileB(Image image, char *filename){
     fprintf(file, "P5\n%d %d\n255\n", image.width, image.height);
     for (int i = 0; i < image.height; ++i) {
         for (int j = 0; j < image.width; ++j) {
-            fprintf(file, "%c", image.content[i][j]);
-            /*if (image.content[i][j] < 0)
+            if (image.content[i][j] < 0)
                 fprintf(file, "%c", 0);
             else if (image.content[i][j] > 255)
                 fprintf(file, "%c", 255);
             else
-                fprintf(file, "%c", image.content[i][j]);*/
-
+                fprintf(file, "%c", image.content[i][j]);
         }
     }
 }
@@ -142,7 +140,6 @@ void normalizeMatrix(Image *image){
             if (max < image->content[i][j]) max = image->content[i][j];
         }
     }
-
     int difference = max - min;
 
     for (int i = 0; i < image->height; ++i) {
@@ -158,27 +155,23 @@ void normalizeMatrix(Image *image){
 }
 
 int filterByX(int **frame){
-    return xAxis[0][0] * frame[0][0] +
-           xAxis[0][1] * frame[0][1] +
-           xAxis[0][2] * frame[0][2] +
-           xAxis[1][0] * frame[1][0] +
-           xAxis[1][1] * frame[1][1] +
-           xAxis[1][2] * frame[1][2] +
-           xAxis[2][0] * frame[2][0] +
-           xAxis[2][1] * frame[2][1] +
-           xAxis[2][2] * frame[2][2];
+    int sum = 0;
+    for (int i = 0; i <3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            sum += xAxis[i][j] * frame[i][j];
+        }
+    }
+    return sum;
 }
 
 int filterByY(int **frame){
-    return yAxis[0][0] * frame[0][0] +
-           yAxis[0][1] * frame[0][1] +
-           yAxis[0][2] * frame[0][2] +
-           yAxis[1][0] * frame[1][0] +
-           yAxis[1][1] * frame[1][1] +
-           yAxis[1][2] * frame[1][2] +
-           yAxis[2][0] * frame[2][0] +
-           yAxis[2][1] * frame[2][1] +
-           yAxis[2][2] * frame[2][2];
+    int sum = 0;
+    for (int i = 0; i <3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            sum += yAxis[i][j] * frame[i][j];
+        }
+    }
+    return sum;
 }
 
 int ***extractMatrixIntoFrames(Image image){
@@ -199,15 +192,11 @@ int ***extractMatrixIntoFrames(Image image){
     }
     for (int i = 0; i < frameArrayHeight; ++i) {
         for (int j = 0; j < frameArrayWidth; ++j) {
-            frameArray[i * frameArrayWidth + j][0][0] = image.content[i][j];
-            frameArray[i * frameArrayWidth + j][0][1] = image.content[i][j+1];
-            frameArray[i * frameArrayWidth + j][0][2] = image.content[i][j+2];
-            frameArray[i * frameArrayWidth + j][1][0] = image.content[i+1][j];
-            frameArray[i * frameArrayWidth + j][1][1] = image.content[i+1][j+1];
-            frameArray[i * frameArrayWidth + j][1][2] = image.content[i+1][j+2];
-            frameArray[i * frameArrayWidth + j][2][0] = image.content[i+2][j];
-            frameArray[i * frameArrayWidth + j][2][1] = image.content[i+2][j+1];
-            frameArray[i * frameArrayWidth + j][2][2] = image.content[i+2][j+2];
+            for (int k = 0; k < 3; ++k) {
+                for (int l = 0; l < 3; ++l) {
+                    frameArray[i * frameArrayWidth + j][k][l] = image.content[i+k][j+l];
+                }
+            }
         }
     }
     return frameArray;
@@ -264,7 +253,6 @@ int main() {
     normalizeMatrix(&outImageY);
     writeImageToFile(outImageY, "imageOutY.pgm");
     writeImageToFileB(outImageY, "imageOutYB.pgm");
-
 
     return 0;
 }
