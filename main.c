@@ -22,6 +22,58 @@ const int sobelFilterY[3][3] = {
         {-1, -2, -1}
 };
 
+void readPgmFile(Image *image, char *filename, char *readMode);
+void readBinaryPgm(Image *image, FILE *fptr);
+void readAsciiPgm(Image *image, FILE *fptr);
+void writeImage(Image image, char *filename);
+void writeImageToAsciiFile(Image image, char *filename);
+void writeImageToBinaryFile(Image image, char *filename);
+int filterByX(int **frame);
+int filterByY(int **frame);
+int ***extractMatrixIntoFrames(Image image);
+void normalizeMatrix(Image *image);
+
+
+int main() {
+    Image sourceImage, outImageX, outImageY;
+    sourceImage.content = NULL;
+    // TODO Padding for images
+    readPgmFile(&sourceImage, "buffalo.pgm", "rb");
+
+    normalizeMatrix(&sourceImage);
+    writeImage(sourceImage, "imageOutB.pgm");
+
+    int ***frameArray = extractMatrixIntoFrames(sourceImage);
+
+    outImageX.width = sourceImage.width - 2;
+    outImageX.height = sourceImage.height - 2;
+    outImageX.content = (int **) malloc(outImageX.height * sizeof(int *));
+
+    for (int i = 0; i < outImageX.height; ++i) {
+        outImageX.content[i] = (int *) malloc(outImageX.width * sizeof(int));
+        for (int j = 0; j < outImageX.width; ++j) {
+            outImageX.content[i][j] = filterByX(frameArray[i * outImageX.width + j]);
+        }
+    }
+    normalizeMatrix(&outImageX);
+    writeImage(outImageX, "imageOutX.pgm");
+
+    outImageY.width = sourceImage.width - 2;
+    outImageY.height = sourceImage.height - 2;
+    outImageY.content = (int **) malloc(outImageX.height * sizeof(int *));
+
+    for (int i = 0; i < outImageX.height; ++i) {
+        outImageY.content[i] = (int *) malloc(outImageY.width * sizeof(int));
+        for (int j = 0; j < outImageY.width; ++j) {
+            outImageY.content[i][j] = filterByY(frameArray[i * outImageY.width + j]);
+        }
+    }
+    normalizeMatrix(&outImageY);
+    writeImage(outImageY, "imageOutY.pgm");
+
+    return 0;
+}
+
 void readBinaryPgm(Image *image, FILE *fptr){
     char buffer[100], *suffix;
     fgets(buffer, 100, fptr);
@@ -222,44 +274,4 @@ int ***extractMatrixIntoFrames(Image image){
         }
     }
     return frameArray;
-}
-
-int main() {
-    Image sourceImage, outImageX, outImageY;
-    sourceImage.content = NULL;
-    // TODO Padding for images
-    readPgmFile(&sourceImage, "buffalo.pgm", "rb");
-
-    normalizeMatrix(&sourceImage);
-    writeImage(sourceImage, "imageOutB.pgm");
-
-    int ***frameArray = extractMatrixIntoFrames(sourceImage);
-
-    outImageX.width = sourceImage.width - 2;
-    outImageX.height = sourceImage.height - 2;
-    outImageX.content = (int **) malloc(outImageX.height * sizeof(int *));
-
-    for (int i = 0; i < outImageX.height; ++i) {
-        outImageX.content[i] = (int *) malloc(outImageX.width * sizeof(int));
-        for (int j = 0; j < outImageX.width; ++j) {
-            outImageX.content[i][j] = filterByX(frameArray[i * outImageX.width + j]);
-        }
-    }
-    normalizeMatrix(&outImageX);
-    writeImage(outImageX, "imageOutX.pgm");
-
-    outImageY.width = sourceImage.width - 2;
-    outImageY.height = sourceImage.height - 2;
-    outImageY.content = (int **) malloc(outImageX.height * sizeof(int *));
-
-    for (int i = 0; i < outImageX.height; ++i) {
-        outImageY.content[i] = (int *) malloc(outImageY.width * sizeof(int));
-        for (int j = 0; j < outImageY.width; ++j) {
-            outImageY.content[i][j] = filterByY(frameArray[i * outImageY.width + j]);
-        }
-    }
-    normalizeMatrix(&outImageY);
-    writeImage(outImageY, "imageOutY.pgm");
-
-    return 0;
 }
