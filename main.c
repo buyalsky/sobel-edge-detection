@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <math.h>
 
 typedef struct{
     int width;
@@ -32,16 +33,20 @@ int filterByX(int **frame);
 int filterByY(int **frame);
 int ***extractMatrixIntoFrames(Image image);
 void normalizeMatrix(Image *image);
-
+Image addPaddingToImage(Image image);
+Image mergeImages(Image *imageX, Image *imageY);
 
 int main() {
     Image sourceImage, outImageX, outImageY;
     sourceImage.content = NULL;
-    // TODO Padding for images
-    readPgmFile(&sourceImage, "buffalo.pgm", "rb");
+    // TODO Merge X and Y image
+    readPgmFile(&sourceImage, "lena2.pgm", "rb");
 
     normalizeMatrix(&sourceImage);
     writeImage(sourceImage, "imageOutB.pgm");
+    sourceImage = addPaddingToImage(sourceImage);
+    writeImage(sourceImage, "imageOutBPadded.pgm");
+
 
     int ***frameArray = extractMatrixIntoFrames(sourceImage);
 
@@ -68,8 +73,13 @@ int main() {
             outImageY.content[i][j] = filterByY(frameArray[i * outImageY.width + j]);
         }
     }
+
     normalizeMatrix(&outImageY);
     writeImage(outImageY, "imageOutY.pgm");
+    free(frameArray);
+    //Image outImage = mergeImages(&outImageX, &outImageY);
+    //normalizeMatrix(&outImage);
+    //writeImage(outImage, "imageOuts.pgm");
 
     return 0;
 }
@@ -274,4 +284,55 @@ int ***extractMatrixIntoFrames(Image image){
         }
     }
     return frameArray;
+}
+
+Image addPaddingToImage(Image image){
+    Image paddedImage;
+    paddedImage.width = image.width + 2;
+    paddedImage.height = image.height + 2;
+    paddedImage.content = (int **) malloc(paddedImage.height * sizeof(int *));
+
+    for (int i = 0; i < paddedImage.height; ++i) {
+        paddedImage.content[i] = (int *) malloc(paddedImage.width * sizeof(int));
+    }
+
+    for (int i = 0; i < image.height; ++i) {
+        for (int j = 0; j < image.width; ++j) {
+            paddedImage.content[i+1][j+1] = image.content[i][j];
+        }
+    }
+
+    for (int i = 0; i < image.width; ++i) {
+        paddedImage.content[0][i] = image.content[0][i];
+        paddedImage.content[paddedImage.height-1][i] = image.content[image.height-1][i];
+    }
+
+    for (int i = 0; i < image.height; ++i) {
+        paddedImage.content[i][0] = image.content[i][0];
+        paddedImage.content[i][paddedImage.width-1] = image.content[i][image.width-1];
+    }
+
+    paddedImage.content[0][0] = 0;
+    paddedImage.content[0][paddedImage.width-1] = 0;
+    paddedImage.content[paddedImage.height-1][0] = 0;
+    paddedImage.content[paddedImage.height-1][paddedImage.width-1] = 0;
+
+    return paddedImage;
+}
+
+Image mergeImages(Image *imageX, Image *imageY){
+    Image mergedImage;
+    mergedImage.width = imageX->width;
+    mergedImage.height = imageX->height;
+
+    mergedImage.content = (int **) malloc(mergedImage.height * sizeof(int *));
+
+    for (int i = 0; i < mergedImage.height; ++i) {
+        mergedImage.content[i] = (int *) malloc(mergedImage.width * sizeof(int));
+        for (int j = 0; j < mergedImage.width; ++j) {
+         mergedImage.content[i][j] = (int) sqrt((double) (imageX->content[i][j] * imageX->content[i][j] +
+                 imageY->content[i][j] * imageY->content[i][j]));
+        }
+    }
+    return mergedImage;
 }
