@@ -37,15 +37,15 @@ Image addPaddingToImage(Image image);
 Image mergeImages(Image *imageX, Image *imageY);
 
 int main() {
+    int i, j;
     Image sourceImage, outImageX, outImageY;
     sourceImage.content = NULL;
-    // TODO Merge X and Y image
     readPgmFile(&sourceImage, "buffalo.pgm", "rb");
 
     normalizeMatrix(&sourceImage);
-    writeImage(sourceImage, "imageOutB.pgm");
+    //writeImage(sourceImage, "imageOutB.pgm");
     sourceImage = addPaddingToImage(sourceImage);
-    writeImage(sourceImage, "imageOutBPadded.pgm");
+    //writeImage(sourceImage, "imageOutBPadded.pgm");
 
 
     int ***frameArray = extractMatrixIntoFrames(sourceImage);
@@ -53,7 +53,6 @@ int main() {
     outImageX.width = sourceImage.width - 2;
     outImageX.height = sourceImage.height - 2;
     outImageX.content = (int **) malloc(outImageX.height * sizeof(int *));
-	int i, j;
     for (i = 0; i < outImageX.height; ++i) {
         outImageX.content[i] = (int *) malloc(outImageX.width * sizeof(int));
         for (j = 0; j < outImageX.width; ++j) {
@@ -72,7 +71,8 @@ int main() {
             outImageY.content[i][j] = filterByY(frameArray[i * outImageY.width + j]);
         }
     }
-    
+    outImageX = addPaddingToImage(outImageX);
+    outImageY = addPaddingToImage(outImageY);
     Image outImage = mergeImages(&outImageX, &outImageY);
 	normalizeMatrix(&outImageX);
     writeImage(outImageX, "imageOutX.pgm");
@@ -322,10 +322,14 @@ Image addPaddingToImage(Image image){
         paddedImage.content[i][paddedImage.width-1] = image.content[i][image.width-1];
     }
 
-    paddedImage.content[0][0] = 0;
-    paddedImage.content[0][paddedImage.width-1] = 0;
-    paddedImage.content[paddedImage.height-1][0] = 0;
-    paddedImage.content[paddedImage.height-1][paddedImage.width-1] = 0;
+    paddedImage.content[0][0] = (int) (paddedImage.content[1][0] + paddedImage.content[0][1]) / 2;
+    paddedImage.content[0][paddedImage.width-1] = (int) (paddedImage.content[1][paddedImage.width-1] +
+            paddedImage.content[0][paddedImage.width-2]) / 2;
+    paddedImage.content[paddedImage.height-1][0] = (paddedImage.content[paddedImage.height-2][0] +
+            paddedImage.content[paddedImage.height-1][1]) / 2;
+    paddedImage.content[paddedImage.height-1][paddedImage.width-1] = (int)
+            (paddedImage.content[paddedImage.height-1][paddedImage.width-1] +
+            paddedImage.content[paddedImage.height-1][paddedImage.width-1]) / 2;
 
     return paddedImage;
 }
