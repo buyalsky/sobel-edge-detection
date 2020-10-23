@@ -29,64 +29,36 @@ void readAsciiPgm(Image *image, FILE *fptr);
 void writeImage(Image image, char *filename);
 void writeImageToAsciiFile(Image image, char *filename);
 void writeImageToBinaryFile(Image image, char *filename);
-int filterByX(int **frame);
-int filterByY(int **frame);
 int ***extractMatrixIntoFrames(Image image);
-void normalizeMatrix(Image *image);
+Image filterImage(Image image, const int filter[3][3]);
+void normalizeImage(Image *image);
 Image addPaddingToImage(Image image);
 Image mergeImages(Image *imageX, Image *imageY);
 
 int main() {
-    int i, j;
     Image sourceImage, outImageX, outImageY;
-    sourceImage.content = NULL;
-    readPgmFile(&sourceImage, "buffalo.pgm", "rb");
+    readPgmFile(&sourceImage, "lena2.pgm", "rb");
 
-    normalizeMatrix(&sourceImage);
-    //writeImage(sourceImage, "imageOutB.pgm");
+    normalizeImage(&sourceImage);
     sourceImage = addPaddingToImage(sourceImage);
-    //writeImage(sourceImage, "imageOutBPadded.pgm");
 
+    outImageX = filterImage(sourceImage, sobelFilterX);
+    outImageY = filterImage(sourceImage, sobelFilterY);
 
-    int ***frameArray = extractMatrixIntoFrames(sourceImage);
-
-    outImageX.width = sourceImage.width - 2;
-    outImageX.height = sourceImage.height - 2;
-    outImageX.content = (int **) malloc(outImageX.height * sizeof(int *));
-    for (i = 0; i < outImageX.height; ++i) {
-        outImageX.content[i] = (int *) malloc(outImageX.width * sizeof(int));
-        for (j = 0; j < outImageX.width; ++j) {
-            outImageX.content[i][j] = filterByX(frameArray[i * outImageX.width + j]);
-        }
-    }
-    
-
-    outImageY.width = sourceImage.width - 2;
-    outImageY.height = sourceImage.height - 2;
-    outImageY.content = (int **) malloc(outImageX.height * sizeof(int *));
-
-    for (i = 0; i < outImageX.height; ++i) {
-        outImageY.content[i] = (int *) malloc(outImageY.width * sizeof(int));
-        for (j = 0; j < outImageY.width; ++j) {
-            outImageY.content[i][j] = filterByY(frameArray[i * outImageY.width + j]);
-        }
-    }
-    outImageX = addPaddingToImage(outImageX);
-    outImageY = addPaddingToImage(outImageY);
     Image outImage = mergeImages(&outImageX, &outImageY);
-	normalizeMatrix(&outImageX);
+
+    normalizeImage(&outImageX);
     writeImage(outImageX, "imageOutX.pgm");
-    normalizeMatrix(&outImageY);
+    normalizeImage(&outImageY);
     writeImage(outImageY, "imageOutY.pgm");
-    free(frameArray);
-    normalizeMatrix(&outImage);
+    normalizeImage(&outImage);
     writeImage(outImage, "imageOut.pgm");
 
     return 0;
 }
 
 void readBinaryPgm(Image *image, FILE *fptr){
-	int i, j;
+    int i, j;
     char buffer[100], *suffix;
     fgets(buffer, 100, fptr);
     if (buffer[0] == '#')
@@ -114,7 +86,7 @@ void readBinaryPgm(Image *image, FILE *fptr){
 }
 
 void readAsciiPgm(Image *image, FILE *fptr){
-	int i;
+    int i;
     char buffer[100];
     fgets(buffer, 100, fptr);
     if (buffer[0] == '#')
@@ -167,7 +139,7 @@ void readPgmFile(Image *image, char *filename, char *readMode){
 }
 
 void writeImageToAsciiFile(Image image, char *filename){
-	int i, j;
+    int i, j;
     FILE *file;
     if ((file = fopen(filename, "w")) == NULL){
         perror("Error happened while opening file!");
@@ -194,7 +166,7 @@ void writeImageToAsciiFile(Image image, char *filename){
 }
 
 void writeImageToBinaryFile(Image image, char *filename){
-	int i, j;
+    int i, j;
     FILE *file;
     if ((file = fopen(filename, "wb")) == NULL){
         perror("Error happened while opening file!");
@@ -221,8 +193,8 @@ void writeImage(Image image, char *filename){
         writeImageToAsciiFile(image, filename);
 }
 
-void normalizeMatrix(Image *image){
-	int i, j;
+void normalizeImage(Image *image){
+    int i, j;
     int min = image->content[0][0], max = image->content[0][0];
     for (i = 0; i < image->height; ++i) {
         for (j = 0; j < image->width; ++j) {
@@ -244,30 +216,35 @@ void normalizeMatrix(Image *image){
     }
 }
 
-int filterByX(int **frame){
-	int i, j;
+int filterFrame(int **frame, const int filter[3][3]){
+    int i, j;
     int sum = 0;
     for (i = 0; i <3; ++i) {
         for (j = 0; j < 3; ++j) {
-            sum += sobelFilterX[i][j] * frame[i][j];
+            sum += filter[i][j] * frame[i][j];
         }
     }
     return sum;
 }
 
-int filterByY(int **frame){
-	int i, j;
-    int sum = 0;
-    for (i = 0; i <3; ++i) {
-        for (j = 0; j < 3; ++j) {
-            sum += sobelFilterY[i][j] * frame[i][j];
+Image filterImage(Image image, const int filter[3][3]){
+    Image filteredImage;
+    int i, j, ***frameArray = extractMatrixIntoFrames(image);
+    filteredImage.width = image.width - 2;
+    filteredImage.height = image.height - 2;
+    filteredImage.content = (int **) malloc(filteredImage.height * sizeof(int *));
+    for (i = 0; i < filteredImage.height; ++i) {
+        filteredImage.content[i] = (int *) malloc(filteredImage.width * sizeof(int));
+        for (j = 0; j < filteredImage.width; ++j) {
+            filteredImage.content[i][j] = filterFrame(frameArray[i * filteredImage.width + j], filter);
         }
     }
-    return sum;
+    return filteredImage;
 }
+
 
 int ***extractMatrixIntoFrames(Image image){
-	int i, j, k, l;
+    int i, j, k, l;
     int frameArrayHeight = image.height - 2;
     int frameArrayWidth = image.width - 2;
     int ***frameArray = (int ***) malloc(frameArrayHeight * frameArrayWidth * sizeof(int **));
@@ -296,7 +273,7 @@ int ***extractMatrixIntoFrames(Image image){
 }
 
 Image addPaddingToImage(Image image){
-	int i, j;
+    int i, j;
     Image paddedImage;
     paddedImage.width = image.width + 2;
     paddedImage.height = image.height + 2;
@@ -304,6 +281,9 @@ Image addPaddingToImage(Image image){
 
     for (i = 0; i < paddedImage.height; ++i) {
         paddedImage.content[i] = (int *) malloc(paddedImage.width * sizeof(int));
+        for (j = 0; j < paddedImage.width; ++j) {
+            paddedImage.content[i][j] = 0;
+        }
     }
 
     for (i = 0; i < image.height; ++i) {
@@ -322,20 +302,16 @@ Image addPaddingToImage(Image image){
         paddedImage.content[i][paddedImage.width-1] = image.content[i][image.width-1];
     }
 
-    paddedImage.content[0][0] = (int) (paddedImage.content[1][0] + paddedImage.content[0][1]) / 2;
-    paddedImage.content[0][paddedImage.width-1] = (int) (paddedImage.content[1][paddedImage.width-1] +
-            paddedImage.content[0][paddedImage.width-2]) / 2;
-    paddedImage.content[paddedImage.height-1][0] = (paddedImage.content[paddedImage.height-2][0] +
-            paddedImage.content[paddedImage.height-1][1]) / 2;
-    paddedImage.content[paddedImage.height-1][paddedImage.width-1] = (int)
-            (paddedImage.content[paddedImage.height-1][paddedImage.width-1] +
-            paddedImage.content[paddedImage.height-1][paddedImage.width-1]) / 2;
+    paddedImage.content[0][0] = 0;
+    paddedImage.content[0][paddedImage.width-1] = 0;
+    paddedImage.content[paddedImage.height-1][0] = 0;
+    paddedImage.content[paddedImage.height-1][paddedImage.width-1] = 0;
 
     return paddedImage;
 }
 
 Image mergeImages(Image *imageX, Image *imageY){
-	int i, j;
+    int i, j;
     Image mergedImage;
     mergedImage.width = imageX->width;
     mergedImage.height = imageX->height;
