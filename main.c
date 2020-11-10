@@ -4,42 +4,67 @@
 
 #include "pgm_lib.h"
 
+static char USAGE[] = "usage: %s -x [input file] -o [output file] --export-gradients (optional)\n";
+
+static struct option LONG_OPTIONS[] = {
+        {"input", required_argument, 0, 'x'},
+        {"out", required_argument, 0, 'o'},
+        {"export-gradients", no_argument, 0, 'g'},
+        {0, 0, 0, 0}
+};
+
+
+void print_usage(char *program_name){
+    fprintf(stderr, USAGE, program_name);
+}
+
 
 int main(int argc, char *argv[]) {
+    bool export_gradient = false;
     int opt;
-    char outputPath[20], inputPath[20];
-    Image sourceImage, outImageX, outImageY;
-    static char usage[] = "usage: %s -x [input file] -o [output file]\n";
+    char output_filename[20], input_filename[20];
+    Image source_image, out_image_x, out_image_y;
 
-    while ((opt = getopt(argc, argv, "x:o:")) != -1){
+    if (argc<5){
+        print_usage(argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    int long_index = 0;
+    while ((opt = getopt_long(argc, argv, "x:o:g",
+                              LONG_OPTIONS, &long_index)) != -1) {
         switch (opt) {
             case 'o':
-                strcpy(outputPath, optarg);
+                strcpy(output_filename, optarg);
                 break;
             case 'x':
-                strcpy(inputPath, optarg);
+                strcpy(input_filename, optarg);
+                break;
+            case 'g' :
+                export_gradient = true;
                 break;
             default:
-                fprintf(stderr, usage, argv[0]);
-                exit(1);
+                print_usage(argv[0]);
+                exit(EXIT_FAILURE);
         }
     }
 
-    readPgmFile(&sourceImage, inputPath, "rb");
+    source_image = read_pgm_file(input_filename);
 
-    normalizeImage(&sourceImage);
-    sourceImage = addPaddingToImage(sourceImage);
+    out_image_x = filter_image_x(source_image);
+    out_image_y = filter_image_y(source_image);
 
-    outImageX = filterImage(sourceImage, sobelFilterX);
-    outImageY = filterImage(sourceImage, sobelFilterY);
+    Image out_image = merge_images(&out_image_x, &out_image_y);
 
-    Image outImage = mergeImages(&outImageX, &outImageY);
+    normalize_image(&out_image_x);
+    normalize_image(&out_image_y);
+    normalize_image(&out_image);
 
-    normalizeImage(&outImageX);
-    normalizeImage(&outImageY);
-    normalizeImage(&outImage);
-
-    writeImage(outImage, outputPath);
+    if (export_gradient){
+        write_image(out_image_x, "gradientX.pgm");
+        write_image(out_image_y, "gradientY.pgm");
+    }
+    write_image(out_image, output_filename);
 
     return 0;
 }

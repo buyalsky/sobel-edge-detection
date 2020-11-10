@@ -4,29 +4,18 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+//TODO: previously defined struct
 typedef struct{
     int width;
     int height;
     int **content;
-    bool isBinary;
+    bool is_binary;
 } Image;
 
 
-const int sobelFilterX[3][3] = {
-        {-1, 0, 1},
-        {-2, 0, 2},
-        {-1, 0, 1}
-};
-
-const int sobelFilterY[3][3] = {
-        {-1, -2, -1},
-        {0, 0, 0},
-        {1, 2, 1}
-};
-
-void readPgmFile(Image *image, char *filename, char *readMode);
-void writeImage(Image image, char *filename);
-Image filterImage(Image image, const int filter[3][3]);
-void normalizeImage(Image *image);
-Image addPaddingToImage(Image image);
-Image mergeImages(Image *imageX, Image *imageY);
+Image read_pgm_file(char *filename);
+void write_image(Image image, char *filename);
+Image filter_image_x(Image image);
+Image filter_image_y(Image image);
+void normalize_image(Image *image);
+Image merge_images(Image *image_x, Image *image_y);
