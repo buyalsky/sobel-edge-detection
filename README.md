@@ -1,7 +1,7 @@
-# Sobel filter on Pgm images
+# Sobel filter on grayscale pgm images
 
-Repo that applies sobel filter on grayscale Pgm files for detecting edge.
-Both binary and ascii Pgm formats are supported.
+Repo that performs sobel filter on grayscale pgm images for edge detection purposes.
+Both binary (P2) and text (P5) formats are supported.
 
 ## Usage
 First, say `make` to compile.
