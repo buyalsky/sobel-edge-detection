@@ -3,6 +3,11 @@
 Repo that performs sobel filter on grayscale pgm images for edge detection purposes.
 Both binary (P2) and text (P5) formats are supported.
 
+You can find sample pgm images on the links below:
+* https://people.sc.fsu.edu/~jburkardt/data/pgma/pgma.html
+* https://people.sc.fsu.edu/~jburkardt/data/pgmb/pgmb.html
+
+
 ## Usage
 First, say `make` to compile.
 
