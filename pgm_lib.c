@@ -23,13 +23,8 @@ const int SOBEL_FILTER_Y[3][3] = {
         {1, 2, 1}
 };
 
-Image read_pgm_file(char *filename);
-void write_image(Image image, char *filename);
-Image filter_image_x(Image image);
-Image filter_image_y(Image image);
 void normalize_image(Image *image);
 Image add_padding_to_image(Image image);
-Image merge_images(Image *image_x, Image *image_y);
 
 void read_binary_pgm(Image *image, FILE *fptr){
     int i, j;
@@ -111,6 +106,7 @@ Image read_pgm_file(char *filename){
     else
         read_binary_pgm(&image, fptr);
     fclose(fptr);
+
     normalize_image(&image);
     image = add_padding_to_image(image);
     return image;
@@ -210,15 +206,15 @@ int ***extract_matrix_into_frames(Image image){
     int i, j, k, l;
     int frame_array_height = image.height - 2;
     int frame_array_width = image.width - 2;
-    int ***frameArray = (int ***) malloc(frame_array_height * frame_array_width * sizeof(int **));
+    int ***frame_array = (int ***) malloc(frame_array_height * frame_array_width * sizeof(int **));
 
     for (i = 0; i < frame_array_height; ++i) {
         for (j = 0; j < frame_array_width; ++j) {
-            frameArray[i * frame_array_width + j] = (int **) malloc(3 * sizeof(int *));
+            frame_array[i * frame_array_width + j] = (int **) malloc(3 * sizeof(int *));
             for (k = 0; k < 3; ++k) {
-                frameArray[i * frame_array_width + j][k] = (int *) malloc(3 * sizeof(int));
+                frame_array[i * frame_array_width + j][k] = (int *) malloc(3 * sizeof(int));
                 for (l = 0; l < 3; ++l) {
-                    frameArray[i * frame_array_width + j][k][l] = 0;
+                    frame_array[i * frame_array_width + j][k][l] = 0;
                 }
             }
         }
@@ -227,12 +223,12 @@ int ***extract_matrix_into_frames(Image image){
         for (j = 0; j < frame_array_width; ++j) {
             for (k = 0; k < 3; ++k) {
                 for (l = 0; l < 3; ++l) {
-                    frameArray[i * frame_array_width + j][k][l] = image.content[i + k][j + l];
+                    frame_array[i * frame_array_width + j][k][l] = image.content[i + k][j + l];
                 }
             }
         }
     }
-    return frameArray;
+    return frame_array;
 }
 
 
@@ -240,14 +236,14 @@ int ***extract_matrix_into_frames(Image image){
 
 Image filter_image(Image image, const int filter[3][3]){
     Image filtered_image;
-    int i, j, ***frameArray = extract_matrix_into_frames(image);
+    int i, j, ***frame_array = extract_matrix_into_frames(image);
     filtered_image.width = image.width - 2;
     filtered_image.height = image.height - 2;
     filtered_image.content = (int **) malloc(filtered_image.height * sizeof(int *));
     for (i = 0; i < filtered_image.height; ++i) {
         filtered_image.content[i] = (int *) malloc(filtered_image.width * sizeof(int));
         for (j = 0; j < filtered_image.width; ++j) {
-            filtered_image.content[i][j] = filter_frame(frameArray[i * filtered_image.width + j], filter);
+            filtered_image.content[i][j] = filter_frame(frame_array[i * filtered_image.width + j], filter);
         }
     }
     return filtered_image;

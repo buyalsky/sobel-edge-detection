@@ -1,6 +1,3 @@
-#ifndef IMAGE_PROCESSING_ASG1_PGM_H
-#define IMAGE_PROCESSING_ASG1_PGM_H
-#endif //IMAGE_PROCESSING_ASG1_PGM_H
 #include <stdbool.h>
 #include <stdio.h>
 
